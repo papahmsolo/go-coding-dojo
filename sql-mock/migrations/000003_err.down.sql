@@ -1,0 +1,2 @@
+ALTER TABLE users_1
+   DROP COLUMN IF EXISTS updated;
