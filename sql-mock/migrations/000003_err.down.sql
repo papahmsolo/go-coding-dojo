@@ -1,2 +1,2 @@
-ALTER TABLE users_1
+ALTER TABLE users
    DROP COLUMN IF EXISTS updated;
