@@ -1,11 +1,12 @@
 version: "3.9"
-   
 services:
-    postgres:
-        image: "postgres:9.6.21-alpine"
-        environment:
-          POSTGRES_USER: guest
-          POSTGRES_PASSWORD: guest
-          POSTGRES_DB: test_db
-        ports:
-          - 2345:5432
+  database:
+    image: "postgres:13-alpine"
+    environment:
+      POSTGRES_USER: guest
+      POSTGRES_PASSWORD: guest
+      POSTGRES_DB: trx
+    ports:
+      - 2345:5432
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
