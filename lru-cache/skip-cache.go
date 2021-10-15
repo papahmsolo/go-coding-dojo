@@ -5,10 +5,6 @@ import "strings"
 type SkipLRU struct{}
 
 func (SkipLRU) LRUCache(calls []string) string {
-	if len(calls) == 0 {
-		return ""
-	}
-
 	reversedResult := make([]string, 0, cacheSize)
 
 	// from the end of calls, if not in result - add
@@ -24,6 +20,24 @@ func (SkipLRU) LRUCache(calls []string) string {
 		}
 	}
 
+	return buildResultString(reversedResult)
+}
+
+func contains(arr []string, elem string) bool {
+	for _, v := range arr {
+		if v == elem {
+			return true
+		}
+	}
+
+	return false
+}
+
+func buildResultString(reversedResult []string) string {
+	if len(reversedResult) == 0 {
+		return ""
+	}
+
 	// reversing and writing
 	sb := strings.Builder{}
 	sb.Grow(len(reversedResult) * 2)
@@ -36,14 +50,4 @@ func (SkipLRU) LRUCache(calls []string) string {
 
 	// trimming the last '-' rune
 	return res[:len(res)-1]
-}
-
-func contains(arr []string, elem string) bool {
-	for _, v := range arr {
-		if v == elem {
-			return true
-		}
-	}
-
-	return false
 }
