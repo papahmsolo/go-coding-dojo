@@ -1,6 +1,9 @@
-package lru
+package lru_test
 
-import "testing"
+import (
+	"lru"
+	"testing"
+)
 
 func TestLRU(t *testing.T) {
 	cases := []struct {
@@ -46,7 +49,7 @@ func TestLRU(t *testing.T) {
 	}
 
 	for _, tt := range cases {
-		order := LRUCache(tt.accessSequence)
+		order := lru.LRUCache(tt.accessSequence)
 		if order != tt.expectedOrder {
 			t.Errorf("expected %q, but got %q", tt.expectedOrder, order)
 		}

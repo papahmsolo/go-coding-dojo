@@ -1,6 +1,8 @@
 package lru
 
-import "strings"
+import (
+	"strings"
+)
 
 const cacheSize = 5
 
@@ -15,6 +17,7 @@ type LRU struct {
 	last     *Node
 	lenght   int
 	capacity int
+	place    map[string]*Node
 }
 
 func (lru *LRU) PushBack(val string) {
@@ -38,27 +41,27 @@ func (lru *LRU) PushBack(val string) {
 		lru.first = second
 		lru.lenght--
 	}
+	lru.place[val] = &n
 }
 
 func (lru *LRU) Find(val string) *Node {
-	for cur := lru.first; cur != nil; cur = cur.Next {
-		if cur.Val == val {
-			return cur
-		}
-	}
-	return nil
+	return lru.place[val]
 }
 
 func (lru *LRU) Delete(n *Node) {
+	val := n.Val
 	if n.Prev != nil {
 		n.Prev.Next = n.Next
+	} else {
 		lru.first = n.Next
 	}
 	if n.Next != nil {
 		n.Next.Prev = n.Prev
+	} else {
 		lru.last = n.Prev
 	}
 	lru.lenght--
+	delete(lru.place, val)
 }
 
 func (lru *LRU) Length() int {
@@ -66,25 +69,24 @@ func (lru *LRU) Length() int {
 }
 
 func LRUCache(calls []string) string {
-	cache := make([]string, 0, cacheSize)
+	cache := LRU{capacity: cacheSize, place: make(map[string]*Node)}
 	for _, v := range calls {
-		idx := index(v, cache)
-		if idx > -1 {
-			cache = append(cache[:idx], cache[idx+1:]...)
+		if node := cache.Find(v); node != nil {
+			cache.Delete(node)
 		}
-		if len(cache) == cacheSize {
-			cache = cache[1:]
+		if cache.lenght == cache.capacity {
+			cache.Delete(cache.first)
 		}
-		cache = append(cache, v)
+		cache.PushBack(v)
 	}
-	return strings.Join(cache, "-")
-}
 
-func index(el string, s []string) int {
-	for i, v := range s {
-		if v == el {
-			return i
+	var sb strings.Builder
+	sb.Grow(cache.lenght)
+	for node := cache.first; node != nil; node = node.Next {
+		sb.WriteString(node.Val)
+		if node.Next != nil {
+			sb.WriteRune('-')
 		}
 	}
-	return -1
+	return sb.String()
 }
