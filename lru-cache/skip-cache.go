@@ -4,7 +4,7 @@ import "strings"
 
 type SkipLRU struct{}
 
-func (lru SkipLRU) LRUCache(calls []string) string {
+func (SkipLRU) LRUCache(calls []string) string {
 	reversedResult := make([]string, 0, cacheSize)
 
 	// from the end of calls, if not in result - add

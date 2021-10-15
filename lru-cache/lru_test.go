@@ -2,7 +2,7 @@ package lru
 
 import "testing"
 
-func TestLRU(t *testing.T) {
+func testLRU(t *testing.T, cache LRUCache) {
 	cases := []struct {
 		accessSequence []string
 		expectedOrder  string
@@ -46,7 +46,7 @@ func TestLRU(t *testing.T) {
 	}
 
 	for _, tt := range cases {
-		order := LRUCache(tt.accessSequence)
+		order := cache.LRUCache(tt.accessSequence)
 		if order != tt.expectedOrder {
 			t.Errorf("expected %q, but got %q", tt.expectedOrder, order)
 		}
