@@ -9,16 +9,6 @@ func TestSum(t *testing.T) {
 		result string
 	}{
 		{
-			name:   "negative number",
-			num:    -1,
-			result: "not possible",
-		},
-		{
-			name:   "single digit: zero",
-			num:    0,
-			result: "",
-		},
-		{
 			name:   "single digit: non-zero",
 			num:    1,
 			result: "not possible",
