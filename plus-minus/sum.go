@@ -1,9 +1,5 @@
 package plus
 
-import (
-	"fmt"
-)
-
 // reverse reverses the string.
 func reverse(s string) string {
 	runes := []rune(s)
@@ -52,7 +48,6 @@ func PlusMinus(n int) string {
 		root.AddLevel(digits[i])
 	}
 
-	root.Print()
 
 	if !root.Check() {
 		return "not possible"
@@ -71,7 +66,9 @@ func PlusMinus(n int) string {
 		results = append(results, s)
 	}
 
-	fmt.Printf("possible results: %+v\n\n", results)
+	// Check nodes characteristics
+	//root.Print()
+	//fmt.Printf("possible results: %+v\n\n", results)
 
 	return findMinMinusCount(results)
 }
