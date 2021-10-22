@@ -6,6 +6,15 @@ const (
 	notPossible = "not possible"
 )
 
+// reverse reverses the string.
+func reverse(s string) string {
+	runes := []rune(s)
+	for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
+		runes[i], runes[j] = runes[j], runes[i]
+	}
+	return string(runes)
+}
+
 func PlusMinus(n int) string {
 	if n < 0 {
 		return notPossible
@@ -21,7 +30,7 @@ func PlusMinus(n int) string {
 		n /= 10
 	}
 
-	// 19945 -> l = 4
+	// 19945
 	l := len(digits) - 1
 
 	max := 0
@@ -43,6 +52,8 @@ func PlusMinus(n int) string {
 			}
 		}
 
+		sum += digits[l]
+
 		if sum == 0 && minuses > max {
 			max = minuses
 			solution = currentSolution
@@ -53,5 +64,5 @@ func PlusMinus(n int) string {
 		return notPossible
 	}
 
-	return ""
+	return reverse(solution)
 }
