@@ -60,10 +60,10 @@ func (n *Node) Print() {
 		return
 	}
 	n.left.Print()
-	for i := 0; i < 100 - (n.level * 10); i++ {
+	for i := 0; i < n.level * 10; i++ {
 		fmt.Print("-")
 	}
-	fmt.Printf(" %d (%d)[%s%d]\n", n.controlSum, n.level, n.decision, n.value)
+	fmt.Printf(" %d (%d)[%d]\n", n.value, n.level, n.controlSum)
 	n.right.Print()
 }
 
