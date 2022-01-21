@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"container/heap"
 	"fmt"
 	"log"
 	"os"
@@ -10,6 +11,42 @@ import (
 )
 
 const inf = 10000000
+
+type Item struct {
+	index    int
+	priority int
+}
+
+type PriorityQueue []*Item
+
+func (pq PriorityQueue) Len() int {
+	return len(pq)
+}
+
+func (pq PriorityQueue) Less(i, j int) bool {
+	return pq[i].priority < pq[j].priority
+}
+
+func (pq PriorityQueue) Swap(i, j int) {
+	pq[i], pq[j] = pq[j], pq[i]
+}
+
+func (pq *PriorityQueue) Push(v interface{}) {
+	queue := *pq
+	n := len(queue)
+	queue = queue[:n+1]
+	item := v.(*Item)
+	queue[n] = item
+	*pq = queue
+}
+
+func (pq *PriorityQueue) Pop() interface{} {
+	queue := *pq
+	n := len(queue)
+	item := queue[n-1]
+	*pq = queue[:n-1]
+	return item
+}
 
 func main() {
 	file, err := os.Open("in.txt")
@@ -58,30 +95,26 @@ func dijkstra(risks [][]int) (int, []int) {
 	m := len(risks)
 	n := len(risks[0])
 
-	var graph [][]int
-	for i := 0; i < m*n; i++ {
-		graph = append(graph, make([]int, m*n))
-	}
+	graph := make(map[int][][]int, 0)
 
 	for i, row := range risks {
-		for j, v := range row {
+		for j := range row {
 			if i-1 >= 0 {
-				graph[(i-1)*n+j][i*n+j] = v
+				graph[i*n+j] = append(graph[i*n+j], []int{(i-1)*n + j, risks[i-1][j]})
 			}
 			if i+1 <= m-1 {
-				graph[(i+1)*n+j][i*n+j] = v
+				graph[i*n+j] = append(graph[i*n+j], []int{(i+1)*n + j, risks[i+1][j]})
 			}
 			if j-1 >= 0 {
-				graph[i*n+j-1][i*n+j] = v
+				graph[i*n+j] = append(graph[i*n+j], []int{i*n + j - 1, risks[i][j-1]})
 			}
 			if j+1 <= n-1 {
-				graph[i*n+j+1][i*n+j] = v
+				graph[i*n+j] = append(graph[i*n+j], []int{i*n + j + 1, risks[i][j+1]})
 			}
 		}
 	}
 
 	dist := make([]int, m*n)
-	visited := make([]bool, m*n)
 
 	dist[0] = 0
 	for i := 1; i < len(dist); i++ {
@@ -93,29 +126,29 @@ func dijkstra(risks [][]int) (int, []int) {
 		parents[i] = -1
 	}
 
-	for {
-		minIdx := -1
-		minDist := inf
+	pq := make(PriorityQueue, 0, n*m)
+	started := &Item{
+		index:    0,
+		priority: 0,
+	}
+	heap.Push(&pq, started)
 
-		for i, v := range dist {
-			if v < minDist && !visited[i] {
-				minDist = v
-				minIdx = i
+	for len(pq) > 0 {
+		item := heap.Pop(&pq).(*Item)
+
+		if item.priority > dist[item.index] {
+			continue
+		}
+
+		for _, slice := range graph[item.index] {
+			idx, val := slice[0], slice[1]
+			distance := val + dist[item.index]
+			if distance < dist[idx] {
+				dist[idx] = distance
+				heap.Push(&pq, &Item{index: idx, priority: distance})
+				parents[idx] = item.index
 			}
 		}
-
-		if minIdx == -1 {
-			break
-		}
-
-		for i, v := range graph[minIdx] {
-			if v > 0 && v+dist[minIdx] < dist[i] {
-				dist[i] = v + dist[minIdx]
-				parents[i] = minIdx
-			}
-		}
-
-		visited[minIdx] = true
 	}
 
 	fmt.Println("the shortest way =", dist[len(dist)-1])
@@ -131,10 +164,11 @@ func dijkstra(risks [][]int) (int, []int) {
 }
 
 func expandRisks(risks [][]int) [][]int {
-	m := len(risks)
+	m, n := len(risks), len(risks[0])
+
 	for i, row := range risks {
 		for block := 1; block < 5; block++ {
-			for _, v := range row[:m] {
+			for _, v := range row[:n] {
 				risks[i] = append(risks[i], ((v+block-1)%9)+1)
 			}
 		}
