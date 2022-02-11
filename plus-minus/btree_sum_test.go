@@ -2,44 +2,49 @@ package plus
 
 import "testing"
 
-func TestSum(t *testing.T) {
+func TestSumBTree(t *testing.T) {
 	cases := []struct {
 		name   string
 		num    int
 		result string
 	}{
 		{
-			name:   "negative number",
+			name:   "-1",
 			num:    -1,
 			result: "not possible",
 		},
 		{
-			name:   "single digit: zero",
+			name:   "0",
 			num:    0,
 			result: "",
 		},
 		{
-			name:   "single digit: non-zero",
+			name:   "1",
 			num:    1,
 			result: "not possible",
 		},
 		{
-			name:   "two digit: possible",
+			name:   "11",
 			num:    11,
 			result: "-",
 		},
 		{
-			name:   "positive result",
+			name:   "35132",
 			num:    35132,
-			result: "-++-",
+			result: "--+-",
 		},
 		{
-			name:   "multiple solutions",
+			name:   "35155",
+			num:    35133,
+			result: "not possible",
+		},
+		{
+			name:   "26712",
 			num:    26712,
 			result: "-+--",
 		},
 		{
-			name:   "not possible",
+			name:   "199",
 			num:    199,
 			result: "not possible",
 		},
@@ -47,7 +52,7 @@ func TestSum(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			res := PlusMinus(tc.num)
+			res := PlusMinusBTree(tc.num)
 			if res != tc.result {
 				t.Errorf("expected %q, but got %q", tc.result, res)
 			}
