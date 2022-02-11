@@ -1,4 +1,4 @@
-package success_rate
+package main
 
 import (
 	"encoding/json"
