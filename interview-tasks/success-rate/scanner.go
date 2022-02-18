@@ -13,7 +13,7 @@ import (
 const (
 	url          = "https://storage.googleapis.com/server-success-rate/hosts/host%d/status"
 	serversCount = 100
-	workersCount = 20
+	workersCount = 50
 )
 
 type StatsResponse struct {
@@ -83,7 +83,7 @@ func (s *Scanner) CalcAppsRatesWithMux(hostsCount int) {
 	wg.Wait()
 }
 
-func (s *Scanner) getHostStatsWithHTTP(hostID int) (StatsResponse, error) {
+func (s *Scanner) getHostStats(hostID int) (StatsResponse, error) {
 	resp, err := s.httpClient.Get(fmt.Sprintf(url, hostID))
 	if err != nil {
 		return StatsResponse{}, err
@@ -101,14 +101,14 @@ func (s *Scanner) getHostStatsWithHTTP(hostID int) (StatsResponse, error) {
 
 func (s *Scanner) workerWithChannel() {
 	for hostID := range s.jobsCh {
-		stats, err := s.getHostStatsWithHTTP(hostID)
+		stats, err := s.getHostStats(hostID)
 		s.resultsCh <- Result{stats, err}
 	}
 }
 
 func (s *Scanner) workerWithMutex() {
 	for hostID := range s.jobsCh {
-		stats, err := s.getHostStatsWithHTTP(hostID)
+		stats, err := s.getHostStats(hostID)
 		if err == nil {
 			s.store(stats)
 		}
