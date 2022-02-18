@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/valyala/fasthttp"
 	"log"
 	"net/http"
 	"sort"
@@ -30,7 +29,6 @@ type Result struct {
 
 type Scanner struct {
 	httpClient     *http.Client
-	fastHttpClient *fasthttp.Client
 	storage        map[string]StatsResponse
 
 	jobsCh    chan int
@@ -41,7 +39,6 @@ type Scanner struct {
 
 func NewScanner(timeout time.Duration) *Scanner {
 	return &Scanner{
-		fastHttpClient: &fasthttp.Client{},
 		httpClient:     &http.Client{Timeout: timeout},
 		storage:        make(map[string]StatsResponse),
 		jobsCh:         make(chan int, workersCount),
@@ -101,29 +98,6 @@ func (s *Scanner) getHostStatsWithHTTP(hostID int) (StatsResponse, error) {
 
 	return stats, nil
 }
-
-//func (s *Scanner) getHostStatsWithFastHTTP(hostID int) (StatsResponse, error) {
-//	req := fasthttp.AcquireRequest()
-//	req.SetRequestURI(fmt.Sprintf(url, hostID))
-//
-//	resp := fasthttp.AcquireResponse()
-//	defer fasthttp.ReleaseResponse(resp)
-//
-//	err := s.fastHttpClient.Do(req, resp)
-//	if err != nil {
-//		return StatsResponse{}, err
-//	}
-//
-//	b := resp.Body()
-//
-//	var stats StatsResponse
-//	err = json.NewDecoder().Decode(&stats)
-//	if err != nil {
-//		return StatsResponse{}, err
-//	}
-//
-//	return stats, nil
-//}
 
 func (s *Scanner) workerWithChannel() {
 	for hostID := range s.jobsCh {
