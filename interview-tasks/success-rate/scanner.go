@@ -6,66 +6,128 @@ import (
 	"log"
 	"net/http"
 	"sort"
+	"sync"
 	"time"
 )
 
 const (
-	url          = "###/servers/%d/status"
-	serversCount = 1000
-	workersCount = 100
+	url          = "https://storage.googleapis.com/server-success-rate/hosts/host%d/status"
+	serversCount = 100
+	workersCount = 50
 )
 
-type Scanner struct {
-	client  *http.Client
-	storage map[string]statsResponse
-}
-
-func NewScanner(timeout time.Duration) *Scanner {
-	return &Scanner{
-		client:  &http.Client{Timeout: timeout},
-		storage: make(map[string]statsResponse),
-	}
-}
-
-type statsResponse struct {
+type StatsResponse struct {
 	App          string `json:"application"`
 	TotalCount   int64  `json:"requests_count"`
 	SuccessCount int64  `json:"success_count"`
 }
 
-type result struct {
-	stat statsResponse
+type Result struct {
+	stat StatsResponse
 	err  error
 }
 
-func (s *Scanner) getHostStats(hostID int) (statsResponse, error) {
-	log.Printf("scan url %d\n", hostID)
+type Scanner struct {
+	httpClient     *http.Client
+	storage        map[string]StatsResponse
 
-	resp, err := s.client.Get(fmt.Sprintf(url, hostID))
+	jobsCh    chan int
+	resultsCh chan Result
+
+	mux sync.Mutex
+}
+
+func NewScanner(timeout time.Duration) *Scanner {
+	return &Scanner{
+		httpClient:     &http.Client{Timeout: timeout},
+		storage:        make(map[string]StatsResponse),
+		jobsCh:         make(chan int, workersCount),
+		resultsCh:      make(chan Result, workersCount),
+	}
+}
+
+func (s *Scanner) CalcAppsRatesWithChan(hostsCount int) {
+	for i := 0; i < workersCount; i++ {
+		go s.workerWithChannel()
+	}
+
+	go func() {
+		for i := 0; i < hostsCount; i++ {
+			s.jobsCh <- i
+		}
+		close(s.jobsCh)
+	}()
+
+	s.scanStats()
+}
+
+func (s *Scanner) CalcAppsRatesWithMux(hostsCount int) {
+	var wg sync.WaitGroup
+
+	wg.Add(workersCount)
+
+	for i := 0; i < workersCount; i++ {
+		go func() {
+			s.workerWithMutex()
+			wg.Done()
+		}()
+	}
+
+	go func() {
+		for i := 0; i < hostsCount; i++ {
+			s.jobsCh <- i
+		}
+		close(s.jobsCh)
+	}()
+
+	wg.Wait()
+}
+
+func (s *Scanner) getHostStats(hostID int) (StatsResponse, error) {
+	resp, err := s.httpClient.Get(fmt.Sprintf(url, hostID))
 	if err != nil {
-		return statsResponse{}, err
+		return StatsResponse{}, err
 	}
 	defer resp.Body.Close()
 
-	var stats statsResponse
+	var stats StatsResponse
 	err = json.NewDecoder(resp.Body).Decode(&stats)
 	if err != nil {
-		return statsResponse{}, err
+		return StatsResponse{}, err
 	}
 
 	return stats, nil
 }
 
-func (s *Scanner) worker(jobs <-chan int, results chan<- result) {
-	for hostID := range jobs {
+func (s *Scanner) workerWithChannel() {
+	for hostID := range s.jobsCh {
 		stats, err := s.getHostStats(hostID)
-		results <- result{stats, err}
+		s.resultsCh <- Result{stats, err}
 	}
 }
 
-func (s *Scanner) scanStats(results <-chan result) {
+func (s *Scanner) workerWithMutex() {
+	for hostID := range s.jobsCh {
+		stats, err := s.getHostStats(hostID)
+		if err == nil {
+			s.store(stats)
+		}
+	}
+}
+
+func (s *Scanner) store(res StatsResponse) {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+
+	appStats := s.storage[res.App]
+	appStats.SuccessCount += res.SuccessCount
+	appStats.TotalCount += res.TotalCount
+	s.storage[res.App] = appStats
+}
+
+func (s *Scanner) scanStats() {
 	for i := 0; i < serversCount; i++ {
-		res := <-results
+		res := <-s.resultsCh
 		if res.err != nil {
 			log.Println(res.err)
 		} else {
@@ -93,24 +155,6 @@ func (s *Scanner) printResults() {
 
 func main() {
 	s := NewScanner(time.Second * 2)
-
-	jobs := make(chan int, workersCount)
-	results := make(chan result, workersCount)
-
-	for i := 0; i < workersCount; i++ {
-		go func() {
-			s.worker(jobs, results)
-		}()
-	}
-
-	go func() {
-		for i := 0; i < serversCount; i++ {
-			jobs <- i
-		}
-		close(jobs)
-	}()
-
-	s.scanStats(results)
-
+	s.CalcAppsRatesWithMux(serversCount)
 	s.printResults()
 }
